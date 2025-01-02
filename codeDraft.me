@@ -1,18 +1,18 @@
+//app.js
 require("reflect-metadata"); // Для работы TypeORM
 const { DataSource } = require("typeorm");
 const express = require("express");
-const cors = require("cors"); // Импортируем CORS
 require("dotenv").config();
-const taskRoutes = require("./api/routes/taskRoutes");
+const scheduleParserTask = require("./utils/scheduleParser");
+const taskRoutes = require("./routes/taskRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 3333;
 
-// Настройка CORS
-app.use(cors({ origin: "http://localhost:5173" })); // Разрешаем запросы с клиента
-
 // Подключение к базе данных
 const AppDataSource = new DataSource(require("./ormconfig"));
+// Подключаем маршруты
+app.use("/api/tasks", taskRoutes);
 
 AppDataSource.initialize()
   .then(() => {
@@ -21,8 +21,15 @@ AppDataSource.initialize()
     // Middleware
     app.use(express.json());
 
-    // Подключение маршрутов
-    app.use("/api/tasks", taskRoutes);
+    // Настройка задачи парсинга
+    // URL для парсинга
+    const url = "https://jsonplaceholder.typicode.com";
+    // Контент для поиска
+    const content = "Free fake and reliable API for testing and prototyping.";
+    // Интервал
+    const interval = "10m";
+    // Запуск планировщика
+    scheduleParserTask(url, content, interval);
 
     // Запуск сервера
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
