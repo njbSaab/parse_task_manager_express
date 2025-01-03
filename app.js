@@ -1,32 +1,38 @@
-require("reflect-metadata"); // Для работы TypeORM
-const { DataSource } = require("typeorm");
 const express = require("express");
-const cors = require("cors"); // Импортируем CORS
-require("dotenv").config();
+const cors = require("cors");
+const userRoutes = require("./api/routes/userRoutes");
 const taskRoutes = require("./api/routes/taskRoutes");
+const AppDataSource = require("./config/database"); // Импортируем AppDataSource
+require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 3333;
+const PORT = process.env.PORT || 3082;
 
-// Настройка CORS
-app.use(cors({ origin: "http://localhost:5173" })); // Разрешаем запросы с клиента
+// Middleware
+// app.use(cors({ origin: "http://localhost:5173" }));
+app.use(cors({ origin: "*" })); // Для отладки
+app.use(express.json());
 
-// Подключение к базе данных
-const AppDataSource = new DataSource(require("./ormconfig"));
+// Подключение маршрутов
+app.use("/api/users", userRoutes);
+app.use("/api/tasks", taskRoutes);
 
+// Запуск сервера
 AppDataSource.initialize()
   .then(() => {
-    console.log("Connected to MySQL with TypeORM");
-
-    // Middleware
-    app.use(express.json());
-
-    // Подключение маршрутов
-    app.use("/api/tasks", taskRoutes);
-
-    // Запуск сервера
+    console.log("Connected to the database.");
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
-  .catch((error) => {
-    console.error("Error during DataSource initialization:", error);
-  });
+  .catch((error) =>
+    console.error("Database initialization error:", error.message)
+  );
+
+process.on("SIGINT", () => {
+  console.log("Закрытие сервера...");
+  process.exit();
+});
+
+process.on("SIGTERM", () => {
+  console.log("Закрытие сервера...");
+  process.exit();
+});
